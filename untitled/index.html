@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lasmart Points</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/konva@8.2.2/konva.min.js"></script>
+    <style>
+        #container {
+            position: absolute;
+            top: 0;
+            left: calc(100% - 80%); /* Adjust the value as per your requirements */
+            width: 80%; /* Adjust the width as per your requirements */
+            height: 100vh; /* Adjust the height as per your requirements */
+            border: 1px solid black;
+            border-radius: 1px;
+        }
+        body {
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-family: "Goudy Old Style", sans-serif;
+        }
+        text{
+            font-family: "Goudy Old Style", sans-serif;
+            }
+
+        button {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"],
+        button {
+            border-radius: 4px;
+        }
+    </style>
+
+</head>
+<body>
+<h1 class="body">Lasmart Point Application</h1>
+<h2>Create Point</h2>
+<form id="create-point-form">
+    <label for="x-input">X:</label>
+    <input type="number" id="x-input" placeholder="Enter X coordinate" required><br><br>
+
+    <label for="y-input">Y:</label>
+    <input type="number" id="y-input" placeholder="Enter Y coordinate" required><br><br>
+
+    <label for="r-input">R:</label>
+    <input type="number" id="r-input" placeholder="Enter radius" required><br><br>
+
+    <label for="color-input">Color:</label>
+    <input type="text" id="color-input" placeholder="Enter color" required><br><br>
+    <button type="button">Create Point</button>
+</form>
+
+<h2>Create Comment</h2>
+<form id="create-comment-form">
+    <label>you can see point id via F12 -> console</label><br><br>
+    <label for="color-input">pointId:</label>
+    <input type="text" id="comment-input" placeholder="Enter point ID"><br><br>
+
+    <label for="comment-color">color:</label>
+    <input type="text" id="comment-color" placeholder="enter comment color"><br><br>
+
+    <label for="comment-text">text:</label>
+    <input type="text" id="comment-text" placeholder="enter comment text"><br><br>
+    <button type="button" id="create-comment-btn">Create Comment</button>
+</form>
+
+<h2>Get Points</h2>
+<button id="get-points">get points</button>
+
+<h2>Delete point</h2>
+<form>
+    <label for="delete-field">pointId:</label>
+    <input type="text" id="delete-field" placeholder="enter id"><br><br>
+    <button type="button" id="delete-point">Delete Comment</button>
+</form>
+
+<h2></h2>
+<div id="container"></div>
+
+<script>
+    $(document).ready(function () {
+        const stage = new Konva.Stage({
+            container: 'container',
+            width: 1400, // Adjust the width as per your requirements
+            height: 900
+        });
+
+        const layer = new Konva.Layer();
+        stage.add(layer);
+
+
+        // Handle create-comment button click event
+        $('#create-comment-btn').click(function () {
+            const pointId = $('#comment-input').val();
+            const text = $('#comment-text').val();
+            const color = $('#comment-color').val();
+            const comm = {text: text, pointId: pointId, color: color};
+            console.log(comm);
+            // Make an AJAX POST request to your ASP.NET backend to create a new comment
+            $.ajax({
+                type: 'POST',
+                url: 'https://localhost:7180/api/Comment/create-comment',
+                data: JSON.stringify(comm),
+                contentType: 'application/json',
+                success: function (response) {
+                    // Handle the response from the backend
+                    console.log(response);
+                },
+                error: function (error){
+                    console.log(error);
+                }
+            });
+        });
+        $('#delete-point').click(function () {
+            const pointId = $('#delete-field').val();
+            // Make an AJAX POST request to your ASP.NET backend to create a new comment
+            $.ajax({
+                type: 'DELETE',
+                url: 'https://localhost:7180/api/Point/delete-point?id=${' + pointId + '}',
+                data: {id: pointId},
+                contentType: 'application/json',
+                success: function (response) {
+                    // Handle the response from the backend
+                    console.log(response);
+                },
+                error: function (error){
+                    console.log(error);
+                }
+            });
+        });
+
+
+        $('#create-point-form').submit(function (event) {
+            event.preventDefault();
+
+            const x = parseInt($('#x-input').val());
+            const y = parseInt($('#y-input').val());
+            const r = parseInt($('#r-input').val());
+            const color = $('#color-input').val();
+
+            const circle = new Konva.Circle({
+                x: x,
+                y: y,
+                radius: r,
+                fill: color
+            });
+
+            layer.add(circle);
+            stage.draw();
+            const pointData = {
+                x: x,
+                y: y,
+                r: r,
+                color: color
+            };
+            $.ajax({
+                type: 'POST',
+                url: 'https://localhost:7180/api/Point/create-point',
+                data: JSON.stringify(pointData),
+                contentType: 'application/json',
+                success: function (response) {
+                    // Handle the response from the backend
+                    console.log(response);
+                },
+                error: function (error) {
+                    // Handle the error if the request fails
+                    console.log(error);
+                }
+            });
+            $('#create-point-form')[0].reset();
+        });
+        $('#get-points').click(function () {
+            // Make an AJAX POST request to your ASP.NET backend to create a new comment
+            $.ajax({
+                type: 'GET',
+                url: 'https://localhost:7180/api/Point/get-points',
+                success: function (response) {
+                    // Handle the response from the backend
+                    console.log(response);
+                    layer.destroyChildren();
+
+                    for (var i = 0; i < response.length; i++) {
+                        var point = response[i];
+
+                        var circle = new Konva.Circle({
+                            x: point.x,
+                            y: point.y,
+                            radius: point.r,
+                            fill: point.color
+                        });
+                        layer.add(circle);
+
+                        var comments = point.comments;// Calculate the position and size relative to the circle
+                        var rectWidth = point.r * 2;
+                        var rectHeight = 20;
+
+
+                        for (var j = 0; j < comments.length; j++) {
+                            var comment = comments[j];
+                            var rectX = point.x - point.r;
+                            var rectY = point.y + point.r + 20 * (j) - rectHeight / 2;
+                            var textX = point.x - point.r + 3;
+                            var textY = point.y + point.r + 20 * (j) - 3;
+                            var commentRect = new Konva.Rect({
+                                x: rectX,
+                                y: rectY,
+                                width: rectWidth,
+                                height: rectHeight,
+                                fill: comment.color,
+                                stroke: 'black',
+                                strokeWidth: 1
+                            });
+
+                            var commentText = new Konva.Text({
+                                x: textX,
+                                y: textY,
+                                text: comment.text,
+                                fontSize: 12,
+                                fill: 'black',
+                                align: 'center',
+                                verticalAlign: 'middle'
+                            });
+
+                            layer.add(commentRect);
+                            layer.add(commentText);
+
+                            var commentGroup = new Konva.Group();
+                            commentGroup.add(commentRect, commentText);
+                            layer.add(commentGroup);
+                        }
+
+                    }
+                }
+            });
+        });
+        // Generate a random position within a range
+    });
+
+</script>
+</body>
+</html>
